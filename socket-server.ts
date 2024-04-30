@@ -1,11 +1,11 @@
 import { Server } from "socket.io"
 import cuid from "cuid"
-import {
+import type {
   Player,
   Game,
   ClientToServerEvents,
   ServerToClientEvents,
-} from "../frontend/src/socket-events"
+} from "./src/socket-events"
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(3000, {
   cors: {
@@ -22,6 +22,12 @@ function getGame(roomId: string) {
 
 function getPlayer(socketId: string) {
   return players.find((player) => player.socketId === socketId)
+}
+
+function getPlayerGame(socketId: string) {
+  return games.find((game) =>
+    game.players.some((player) => player.socketId === socketId),
+  )
 }
 
 function createPlayer(socketId: string, name: string) {
@@ -49,7 +55,7 @@ function createGame(roomId: string, leader: Player) {
 }
 
 io.on("connection", (socket) => {
-  console.log(socket.id)
+  console.log("connected", socket.id)
 
   socket.on("join-room", ({ roomId, playerName }) => {
     const player = createPlayer(socket.id, playerName)
@@ -59,6 +65,8 @@ io.on("connection", (socket) => {
     socket.join(roomId)
     io.to(socket.id).emit("room-data", { roomId })
     io.to(roomId).emit("update-players", { players: game.players })
+
+    console.log(socket.id, "joined", roomId)
   })
 
   socket.on("create-room", ({ playerName }) => {
@@ -68,5 +76,20 @@ io.on("connection", (socket) => {
     socket.join(roomId)
     io.to(socket.id).emit("room-data", { roomId })
     io.to(roomId).emit("update-players", { players: game.players })
+
+    console.log(socket.id, "created", roomId)
+  })
+
+  socket.on("disconnect", () => {
+    const player = getPlayer(socket.id)
+    if (!player) return
+    const game = getPlayerGame(socket.id)
+    if (!game) return
+
+    game.players = game.players.filter((p) => p.socketId !== socket.id)
+    socket.leave(game.roomId)
+    io.to(game.roomId).emit("update-players", { players: game.players })
+
+    console.log("disconnected", socket.id)
   })
 })
