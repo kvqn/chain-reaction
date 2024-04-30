@@ -1,19 +1,30 @@
 import { NameInput } from "@/components/NameInput"
 import { useGameContext } from "@/context"
-import { io } from "socket.io-client"
-
-const socket = io("http://localhost:3000")
-
-socket.on("connect", () => {
-  console.log("Connected to server")
-})
+import { socket } from "@/socket"
+import { useEffect } from "react"
 
 export function Game() {
-  const { name } = useGameContext()
+  const { name, players, room } = useGameContext()
+
+  useEffect(() => {
+    if (!name) return
+    if (room)
+      socket.emit("join-room", {
+        roomId: room,
+        playerName: name,
+      })
+    else socket.emit("create-room", { playerName: name })
+  }, [name])
+
   if (name === "") {
     return <NameInput />
   }
 
-  console.log("some logic if name is set")
-  return <div>Hi {name}</div>
+  return (
+    <div>
+      Hi {name}
+      Room {room}
+      Players {JSON.stringify(players)}
+    </div>
+  )
 }
