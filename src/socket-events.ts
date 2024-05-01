@@ -26,7 +26,9 @@ export type Game = {
 }
 
 export interface ServerToClientEvents {
-  "room-data": (data: { roomId: string | null }) => void
+  "room-data": (
+    data: { roomId: string } | { roomId: null; error: string },
+  ) => void
   "update-players": (data: { players: Player[] }) => void
   "change-settings": (data: { settings: Game["settings"] }) => void
   "start-game": (data: { players: Player[] }) => void

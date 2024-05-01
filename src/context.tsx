@@ -7,6 +7,7 @@ const GameContext = createContext<{
   name: string
   setName: React.Dispatch<React.SetStateAction<string>>
   room: string | null
+  roomError: string | null
   players: Player[]
   settings: Game["settings"]
   state: Game["state"]
@@ -29,10 +30,14 @@ export function GameContextProvider({
     },
   })
   const [state, setState] = useState<Game["state"]>("lobby")
+  const [roomError, setRoomError] = useState<string | null>(null)
 
-  socket.on("room-data", ({ roomId }) => {
-    if (roomId != null) setSearchParams({ room: roomId })
-    else setSearchParams({})
+  socket.on("room-data", (data) => {
+    if (data.roomId != null) setSearchParams({ room: data.roomId })
+    else {
+      setSearchParams({})
+      setRoomError(data.error)
+    }
   })
 
   socket.on("update-players", ({ players }) => {
@@ -50,7 +55,7 @@ export function GameContextProvider({
 
   return (
     <GameContext.Provider
-      value={{ name, room, players, settings, setName, state }}
+      value={{ name, room, players, settings, setName, state, roomError }}
     >
       {children}
     </GameContext.Provider>

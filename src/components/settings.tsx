@@ -2,6 +2,7 @@ import { useGameContext } from "@/context"
 import { cn } from "@/lib/utils"
 import { socket } from "@/socket"
 import type { Game } from "@/socket-events"
+import toast from "react-hot-toast"
 
 export function Settings() {
   return (
@@ -48,14 +49,19 @@ function GridSizeButton({ rows, cols }: { rows: number; cols: number }) {
 }
 
 function StartGameButton() {
+  const { players } = useGameContext()
   return (
-    <div
-      className="mt-2 flex w-full justify-center"
-      onClick={() => {
-        socket.emit("start-game")
-      }}
-    >
-      <button className="rounded-md bg-red-900 px-2 py-1 hover:bg-red-800">
+    <div className="mt-2 flex w-full justify-center">
+      <button
+        className="rounded-md bg-red-900 px-2 py-1 hover:bg-red-800"
+        onClick={() => {
+          if (players.length <= 1) {
+            toast.error("Need at least 2 players to start game")
+            return
+          }
+          socket.emit("start-game")
+        }}
+      >
         Start Game
       </button>
     </div>

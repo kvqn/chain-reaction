@@ -6,7 +6,7 @@ import { socket } from "@/socket"
 import { useEffect } from "react"
 
 export function Game() {
-  const { name, room } = useGameContext()
+  const { name, room, roomError } = useGameContext()
 
   useEffect(() => {
     if (!name) return
@@ -29,7 +29,7 @@ export function Game() {
   if (room === null) {
     return (
       <div className="flex flex-col">
-        This room doesn't exist.
+        <p className="text-center">{roomError}</p>
         <button
           onClick={() => {
             socket.emit("create-room", { playerName: name })

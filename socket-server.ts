@@ -67,10 +67,25 @@ io.on("connection", (socket) => {
     const player = createPlayer(socket.id, playerName)
     const game = getGame(roomId)
     if (!game) {
-      io.to(socket.id).emit("room-data", { roomId: null })
+      io.to(socket.id).emit("room-data", {
+        roomId: null,
+        error: "This room does not exist.",
+      })
       return
     }
-    if (game.players.length == 2) return
+    if (game.players.length == 2) {
+      io.to(socket.id).emit("room-data", {
+        roomId: null,
+        error: "This room is full.",
+      })
+      return
+    }
+    if (game.state != "lobby") {
+      io.to(socket.id).emit("room-data", {
+        roomId: null,
+        error: "This game has already started.",
+      })
+    }
     // TODO: handle more than 2 players
 
     if (game.players.some((p) => p.socketId === socket.id)) return
