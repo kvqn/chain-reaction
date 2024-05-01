@@ -2,6 +2,7 @@ export type Player = {
   socketId: string
   name: string
   color: "red" | "blue" | null
+  isLeader: boolean
 }
 
 export const COLORS = ["red", "blue"] as const
@@ -25,10 +26,11 @@ export type Game = {
 }
 
 export interface ServerToClientEvents {
-  "room-data": (data: { roomId: string }) => void
+  "room-data": (data: { roomId: string | null }) => void
   "update-players": (data: { players: Player[] }) => void
   "change-settings": (data: { settings: Game["settings"] }) => void
   "start-game": (data: { players: Player[] }) => void
+  "game-over": (data: { winner: Player }) => void
 }
 
 export interface ClientToServerEvents {

@@ -36,20 +36,18 @@ function createPlayer(socketId: string, name: string) {
     socketId,
     name,
     color: null,
+    isLeader: false,
   }
   players.push(player)
   return player
 }
 
 function createGame(roomId: string, leader: Player) {
+  leader.isLeader = true
   const game: Game = {
     roomId,
     players: [leader],
-    leader: {
-      socketId: leader.socketId,
-      name: leader.name,
-      color: null,
-    },
+    leader: leader,
     settings: {
       gridSize: {
         rows: 16,
@@ -68,10 +66,14 @@ io.on("connection", (socket) => {
   socket.on("join-room", ({ roomId, playerName }) => {
     const player = createPlayer(socket.id, playerName)
     const game = getGame(roomId)
-    if (!game) return
+    if (!game) {
+      io.to(socket.id).emit("room-data", { roomId: null })
+      return
+    }
     if (game.players.length == 2) return
     // TODO: handle more than 2 players
 
+    if (game.players.some((p) => p.socketId === socket.id)) return
     game.players.push(player)
     socket.join(roomId)
     io.to(socket.id).emit("room-data", { roomId })
@@ -102,6 +104,12 @@ io.on("connection", (socket) => {
     io.to(game.roomId).emit("update-players", { players: game.players })
 
     console.log("disconnected", socket.id)
+
+    if (game.state != "game-over" && game.players.length <= 1) {
+      io.to(game.roomId).emit("game-over", { winner: game.players[0] })
+      games.splice(games.indexOf(game), 1)
+      console.log("game over")
+    }
   })
 
   socket.on("change-settings", ({ settings }) => {

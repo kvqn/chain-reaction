@@ -1,7 +1,7 @@
 import { NameInput } from "@/components/NameInput"
 import { Players } from "@/components/Players"
+import { Settings } from "@/components/settings"
 import { useGameContext } from "@/context"
-import { cn } from "@/lib/utils"
 import { socket } from "@/socket"
 import { useEffect } from "react"
 
@@ -26,10 +26,28 @@ export function Game() {
     return <NameInput />
   }
 
+  if (room === null) {
+    return (
+      <div className="flex flex-col">
+        This room doesn't exist.
+        <button
+          onClick={() => {
+            socket.emit("create-room", { playerName: name })
+          }}
+          className="rounded-md bg-red-900 px-2 py-1 hover:bg-red-800"
+        >
+          Create new room
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex">
+    <div className="flex w-full justify-evenly">
       <Players />
-      <CenterBoard />
+      <div className="flex w-[70%] items-center justify-center p-4">
+        <CenterBoard />
+      </div>
     </div>
   )
 }
@@ -42,50 +60,6 @@ function CenterBoard() {
   }
 
   return <Board />
-}
-
-function Settings() {
-  const { settings } = useGameContext()
-
-  return (
-    <div className="rounded-lg border-4 border-neutral-700 p-4">
-      <h1>Settings</h1>
-      <div>
-        <p>Grid Size</p>
-        <div>
-          <div
-            onClick={() => {
-              socket.emit("change-settings", {
-                settings: { gridSize: { rows: 16, cols: 8 } },
-              })
-              console.log("test")
-            }}
-            className={cn({
-              "bg-red-100":
-                settings.gridSize.rows === 16 && settings.gridSize.cols === 8,
-            })}
-          >
-            16 x 8
-          </div>
-          <div
-            onClick={() => {
-              socket.emit("change-settings", {
-                settings: { gridSize: { rows: 32, cols: 16 } },
-              })
-              console.log("test")
-            }}
-            className={cn({
-              "bg-red-100":
-                settings.gridSize.rows === 32 && settings.gridSize.cols === 16,
-            })}
-          >
-            32 x 16
-          </div>
-        </div>
-      </div>
-      <button>Start Game</button>
-    </div>
-  )
 }
 
 function Board() {

@@ -31,7 +31,8 @@ export function GameContextProvider({
   const [state, setState] = useState<Game["state"]>("lobby")
 
   socket.on("room-data", ({ roomId }) => {
-    setSearchParams({ room: roomId })
+    if (roomId != null) setSearchParams({ room: roomId })
+    else setSearchParams({})
   })
 
   socket.on("update-players", ({ players }) => {
