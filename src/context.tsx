@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from "react"
-import { Player } from "./socket-events"
+import { Game, Player } from "./socket-events"
 import { useSearchParams } from "react-router-dom"
 import { socket } from "./socket"
 
@@ -8,7 +8,8 @@ const GameContext = createContext<{
   setName: React.Dispatch<React.SetStateAction<string>>
   room: string | null
   players: Player[]
-  setPlayers: React.Dispatch<React.SetStateAction<Player[]>>
+  settings: Game["settings"]
+  state: Game["state"]
 } | null>(null)
 
 export function GameContextProvider({
@@ -21,6 +22,13 @@ export function GameContextProvider({
   const [searchParams, setSearchParams] = useSearchParams()
   const room = searchParams.get("room")
   const [players, setPlayers] = useState<Player[]>([])
+  const [settings, setSettings] = useState<Game["settings"]>({
+    gridSize: {
+      rows: 16,
+      cols: 8,
+    },
+  })
+  const [state, setState] = useState<Game["state"]>("lobby")
 
   socket.on("room-data", ({ roomId }) => {
     setSearchParams({ room: roomId })
@@ -30,8 +38,19 @@ export function GameContextProvider({
     setPlayers(players)
   })
 
+  socket.on("change-settings", ({ settings }) => {
+    setSettings(settings)
+  })
+
+  socket.on("start-game", ({ players }) => {
+    setPlayers(players)
+    setState("playing")
+  })
+
   return (
-    <GameContext.Provider value={{ name, setName, room, players, setPlayers }}>
+    <GameContext.Provider
+      value={{ name, room, players, settings, setName, state }}
+    >
       {children}
     </GameContext.Provider>
   )

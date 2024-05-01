@@ -1,10 +1,11 @@
 import { Server } from "socket.io"
 import cuid from "cuid"
-import type {
-  Player,
-  Game,
-  ClientToServerEvents,
-  ServerToClientEvents,
+import {
+  type Player,
+  type Game,
+  type ClientToServerEvents,
+  type ServerToClientEvents,
+  COLORS,
 } from "./src/socket-events"
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(3000, {
@@ -49,6 +50,13 @@ function createGame(roomId: string, leader: Player) {
       name: leader.name,
       color: null,
     },
+    settings: {
+      gridSize: {
+        rows: 16,
+        cols: 8,
+      },
+    },
+    state: "lobby",
   }
   games.push(game)
   return game
@@ -61,6 +69,9 @@ io.on("connection", (socket) => {
     const player = createPlayer(socket.id, playerName)
     const game = getGame(roomId)
     if (!game) return
+    if (game.players.length == 2) return
+    // TODO: handle more than 2 players
+
     game.players.push(player)
     socket.join(roomId)
     io.to(socket.id).emit("room-data", { roomId })
@@ -91,5 +102,30 @@ io.on("connection", (socket) => {
     io.to(game.roomId).emit("update-players", { players: game.players })
 
     console.log("disconnected", socket.id)
+  })
+
+  socket.on("change-settings", ({ settings }) => {
+    const player = getPlayer(socket.id)
+    const game = getPlayerGame(socket.id)
+    if (!player || !game) return
+    if (player.socketId !== game.leader.socketId) return
+
+    game.settings = settings
+    io.to(game.roomId).emit("change-settings", { settings })
+    console.log("changed settings")
+  })
+
+  socket.on("start-game", () => {
+    const player = getPlayer(socket.id)
+    const game = getPlayerGame(socket.id)
+    if (!player || !game) return
+    if (player.socketId !== game.leader.socketId) return
+
+    game.players.forEach((player, i) => {
+      player.color = COLORS[i]
+    })
+    game.state = "playing"
+
+    io.to(game.roomId).emit("start-game", { players: game.players })
   })
 })
