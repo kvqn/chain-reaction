@@ -9,6 +9,7 @@ export function Cell({ row, col }: { row: number; col: number }) {
   const [blobCount, setBlob] = useState(0)
   const { cellCallbacks, settings, turn } = useGameContext()
   const [color, setColor] = useState<"red" | "blue" | null>(null)
+  const [explode, setExplode] = useState(false)
 
   useEffect(() => {
     cellCallbacks.current[row]![col] = (
@@ -22,7 +23,7 @@ export function Cell({ row, col }: { row: number; col: number }) {
   }, [])
 
   function callIfPossible(r: number, c: number) {
-    if (r < 0 || r >= 32 || c < 0 || c >= 16) return
+    if (!cellCallbacks.current[r] || !cellCallbacks.current[r]![c]) return
     cellCallbacks.current[r]![c]!(color!, false)
   }
 
@@ -40,10 +41,14 @@ export function Cell({ row, col }: { row: number; col: number }) {
     ) {
       console.log("explode")
       setBlob(0)
-      callIfPossible(row, col + 1)
-      callIfPossible(row - 1, col)
-      callIfPossible(row + 1, col)
-      callIfPossible(row, col - 1)
+      setExplode(true)
+      setTimeout(() => {
+        setExplode(false)
+        callIfPossible(row, col + 1)
+        callIfPossible(row - 1, col)
+        callIfPossible(row + 1, col)
+        callIfPossible(row, col - 1)
+      }, 1000)
     }
   }, [blobCount])
 
@@ -56,8 +61,13 @@ export function Cell({ row, col }: { row: number; col: number }) {
         console.log("placing")
         socket.emit("place", { row, col })
       }}
-      className="flex h-[40px] w-[40px] items-center justify-center"
+      className="relative flex h-[40px] w-[40px] items-center justify-center"
     >
+      {explode && (
+        <div className="absolute">
+          <Explode />
+        </div>
+      )}
       <Blob count={blobCount} color={color!} />
     </div>
   )
@@ -159,12 +169,77 @@ function TripleBlob({ color }: { color: "red" | "blue" }) {
   )
 }
 
+export function Explode() {
+  const [go, setGo] = useState(false)
+
+  useEffect(() => {
+    setTimeout(() => setGo(true), 0)
+  }, [])
+
+  return (
+    <div className="relative">
+      <div
+        className={cn(
+          "absolute translate-x-0 rounded-full transition-transform duration-500",
+          {
+            "translate-x-[400%]": go,
+          },
+        )}
+        style={{
+          height: `${AtomSizePX}px`,
+          width: `${AtomSizePX}px`,
+          backgroundColor: "red",
+        }}
+      />
+      <div
+        className={cn(
+          "absolute translate-x-0 rounded-full transition-transform duration-500",
+          {
+            "-translate-x-[400%]": go,
+          },
+        )}
+        style={{
+          height: `${AtomSizePX}px`,
+          width: `${AtomSizePX}px`,
+          backgroundColor: "red",
+        }}
+      />
+      <div
+        className={cn(
+          "absolute translate-x-0 rounded-full transition-transform duration-500",
+          {
+            "translate-y-[400%]": go,
+          },
+        )}
+        style={{
+          height: `${AtomSizePX}px`,
+          width: `${AtomSizePX}px`,
+          backgroundColor: "red",
+        }}
+      />
+      <div
+        className={cn(
+          "absolute translate-x-0 rounded-full transition-transform duration-500",
+          {
+            "-translate-y-[400%]": go,
+          },
+        )}
+        style={{
+          height: `${AtomSizePX}px`,
+          width: `${AtomSizePX}px`,
+          backgroundColor: "red",
+        }}
+      />
+    </div>
+  )
+}
+
 export function Board() {
   const { settings } = useGameContext()
   const rows = settings.gridSize.rows
   const cols = settings.gridSize.cols
   return (
-    <div className="flex flex-col divide-y border">
+    <div className="flex flex-col divide-y overflow-hidden border">
       {Array.from({ length: rows }).map((_, r) => (
         <div key={r} className="flex divide-x">
           {Array.from({ length: cols }).map((_, c) => (

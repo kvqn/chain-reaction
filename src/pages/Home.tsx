@@ -1,3 +1,4 @@
+import { Explode } from "@/components/Board"
 import { Link } from "react-router-dom"
 
 export function Home() {
@@ -7,6 +8,7 @@ export function Home() {
       <Link to="/game" className="text-2xl font-semibold">
         Play
       </Link>
+      <Explode />
     </div>
   )
 }
