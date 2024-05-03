@@ -52,8 +52,6 @@ export function Cell({ row, col }: { row: number; col: number }) {
     }
   }, [blobCount])
 
-  console.log("render", row, col, blobCount, color)
-
   return (
     <div
       onClick={() => {
@@ -63,11 +61,7 @@ export function Cell({ row, col }: { row: number; col: number }) {
       }}
       className="relative flex h-[40px] w-[40px] items-center justify-center"
     >
-      {explode && (
-        <div className="absolute">
-          <Explode />
-        </div>
-      )}
+      {explode && <Explode color={color!} />}
       <Blob count={blobCount} color={color!} />
     </div>
   )
@@ -82,45 +76,14 @@ function Blob({ count, color }: { count: number; color: "red" | "blue" }) {
 }
 
 function SingleBlob({ color }: { color: "red" | "blue" }) {
-  return (
-    <div className="flex h-full w-full items-center justify-center">
-      <div
-        className={cn("rounded-full", {
-          "bg-red-500": color === "red",
-          "bg-blue-500": color === "blue",
-        })}
-        style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
-        }}
-      />
-    </div>
-  )
+  return <Atom color={color} />
 }
 
 function DoubleBlob({ color }: { color: "red" | "blue" }) {
   return (
     <div className="relative animate-spin">
-      <div
-        className={cn("-translate-x-1/2 rounded-full", {
-          "bg-red-500": color === "red",
-          "bg-blue-500": color === "blue",
-        })}
-        style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
-        }}
-      />
-      <div
-        className={cn("translate-x-1/2 rounded-full", {
-          "bg-red-500": color === "red",
-          "bg-blue-500": color === "blue",
-        })}
-        style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
-        }}
-      />
+      <Atom color={color} className="-translate-x-1/2" />
+      <Atom color={color} className="translate-x-1/2" />
     </div>
   )
 }
@@ -132,36 +95,24 @@ function cos(deg: number) {
 function TripleBlob({ color }: { color: "red" | "blue" }) {
   return (
     <div className="relative animate-spin">
-      <div
-        className={cn("absolute rounded-full", {
-          "bg-red-500": color === "red",
-          "bg-blue-500": color === "blue",
-        })}
+      <Atom
+        color={color}
+        className="absolute"
         style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
           transform: `translateX(${(-0.5 + cos(30)) * 100}%)`,
         }}
       />
-      <div
-        className={cn("absolute rounded-full", {
-          "bg-red-500": color === "red",
-          "bg-blue-500": color === "blue",
-        })}
+      <Atom
+        color={color}
+        className="absolute"
         style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
           transform: `translateX(${(-0.5 - cos(30)) * 100}%)`,
         }}
       />
-      <div
-        className={cn("absolute rounded-full", {
-          "bg-red-500": color === "red",
-          "bg-blue-500": color === "blue",
-        })}
+      <Atom
+        color={color}
+        className="absolute"
         style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
           transform: `translateX(${-0.5 * 100}%) translateY(${(-0.5 - 1) * 100}%)`,
         }}
       />
@@ -169,7 +120,7 @@ function TripleBlob({ color }: { color: "red" | "blue" }) {
   )
 }
 
-export function Explode() {
+export function Explode({ color }: { color: "red" | "blue" }) {
   const [go, setGo] = useState(false)
 
   useEffect(() => {
@@ -177,60 +128,33 @@ export function Explode() {
   }, [])
 
   return (
-    <div className="relative">
-      <div
-        className={cn(
-          "absolute translate-x-0 rounded-full transition-transform duration-500",
-          {
-            "translate-x-[400%]": go,
-          },
-        )}
-        style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
-          backgroundColor: "red",
-        }}
+    <>
+      <Atom
+        color={color}
+        className={cn("absolute transition-transform duration-500", {
+          "translate-x-[400%]": go,
+        })}
       />
-      <div
-        className={cn(
-          "absolute translate-x-0 rounded-full transition-transform duration-500",
-          {
-            "-translate-x-[400%]": go,
-          },
-        )}
-        style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
-          backgroundColor: "red",
-        }}
+
+      <Atom
+        color={color}
+        className={cn("absolute transition-transform duration-500", {
+          "-translate-x-[400%]": go,
+        })}
       />
-      <div
-        className={cn(
-          "absolute translate-x-0 rounded-full transition-transform duration-500",
-          {
-            "translate-y-[400%]": go,
-          },
-        )}
-        style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
-          backgroundColor: "red",
-        }}
+      <Atom
+        color={color}
+        className={cn("absolute transition-transform duration-500", {
+          "translate-y-[400%]": go,
+        })}
       />
-      <div
-        className={cn(
-          "absolute translate-x-0 rounded-full transition-transform duration-500",
-          {
-            "-translate-y-[400%]": go,
-          },
-        )}
-        style={{
-          height: `${AtomSizePX}px`,
-          width: `${AtomSizePX}px`,
-          backgroundColor: "red",
-        }}
+      <Atom
+        color={color}
+        className={cn("absolute transition-transform duration-500", {
+          "-translate-y-[400%]": go,
+        })}
       />
-    </div>
+    </>
   )
 }
 
@@ -248,5 +172,34 @@ export function Board() {
         </div>
       ))}
     </div>
+  )
+}
+
+function Atom({
+  color,
+  className,
+  style,
+}: {
+  color: "red" | "blue"
+  className?: string
+  style?: React.CSSProperties
+}) {
+  console.log("atom", color)
+  return (
+    <div
+      className={cn(
+        "rounded-full",
+        {
+          "bg-red-500": color === "red",
+          "bg-blue-500": color === "blue",
+        },
+        className,
+      )}
+      style={{
+        height: `${AtomSizePX}px`,
+        width: `${AtomSizePX}px`,
+        ...style,
+      }}
+    />
   )
 }
