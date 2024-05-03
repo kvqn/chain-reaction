@@ -37,6 +37,7 @@ function createPlayer(socketId: string, name: string) {
     name,
     color: null,
     isLeader: false,
+    lost: false,
   }
   players.push(player)
   return player
@@ -55,6 +56,10 @@ function createGame(roomId: string, leader: Player) {
       },
     },
     state: "lobby",
+    turn: null,
+    cells: [[]],
+    cellCounts: new Map(),
+    countTurns: 0,
   }
   games.push(game)
   return game
@@ -148,7 +153,118 @@ io.on("connection", (socket) => {
       player.color = COLORS[i]
     })
     game.state = "playing"
+    game.cells = Array.from({ length: game.settings.gridSize.rows }, () =>
+      Array.from({ length: game.settings.gridSize.cols }, () => {
+        return { count: 0, owner: null }
+      }),
+    )
+    game.turn = game.players[0]
+    game.countTurns = 0
 
     io.to(game.roomId).emit("start-game", { players: game.players })
+    io.to(game.roomId).emit("change-turn", { player: game.turn })
+  })
+
+  socket.on("place", ({ row, col }) => {
+    const player = getPlayer(socket.id)
+    const game = getPlayerGame(socket.id)
+    if (!player || !game) return
+    if (game.state != "playing") return
+    if (player.socketId !== game.turn?.socketId) return
+
+    console.log("gbfdkb")
+
+    io.to(game.roomId).emit("place", { row, col, color: player.color! })
+    game.cellCounts.set(
+      player.socketId,
+      game.cellCounts.get(player.socketId) ?? 0 + 1,
+    )
+    game.countTurns++
+
+    const queue: Array<[number, number]> = [[row, col]]
+    while (queue.length > 0) {
+      const [r, c] = queue.shift()!
+      if (r < 0 || r >= game.settings.gridSize.rows) continue
+      if (c < 0 || c >= game.settings.gridSize.cols) continue
+      if (
+        game.cells[r][c].owner !== player.socketId &&
+        game.cells[r][c].owner !== null
+      ) {
+        game.cellCounts.set(
+          game.cells[r][c].owner!,
+          game.cellCounts.get(game.cells[r][c].owner!)! -
+            game.cells[r][c].count,
+        )
+        game.cellCounts.set(
+          player.socketId,
+          game.cellCounts.get(player.socketId)! + game.cells[r][c].count,
+        )
+        game.cells[r][c].owner = player.socketId
+      }
+      game.cells[r][c].count++
+
+      // checking if a player lost
+      let count_alive = 0
+      if (game.countTurns > game.players.length) {
+        for (const [socketId, count] of game.cellCounts) {
+          if (count == 0) {
+            const player = game.players.find((p) => p.socketId === socketId)!
+            if (player.lost) continue
+            player.lost = true
+            io.to(game.roomId).emit("player-lost", { player })
+          } else {
+            count_alive++
+          }
+        }
+      }
+      if (count_alive == 1) {
+        const winner = game.players.find((p) => !p.lost)!
+        io.to(game.roomId).emit("game-over", { winner })
+        game.state = "game-over"
+        console.log("game over")
+        return
+      }
+
+      if (
+        ((r == 0 || r == game.settings.gridSize.rows - 1) &&
+          (c == 0 || c == game.settings.gridSize.cols - 1) &&
+          game.cells[r][c].count == 2) ||
+        ((r == 0 ||
+          r == game.settings.gridSize.rows - 1 ||
+          c == 0 ||
+          c == game.settings.gridSize.cols - 1) &&
+          game.cells[r][c].count == 3) ||
+        game.cells[r][c].count == 4
+      ) {
+        // game.cellCounts.set(
+        //   player.socketId,
+        //   game.cellCounts.get(player.socketId)! - 1,
+        // )
+        game.cells[r][c].owner = null
+        game.cells[r][c].count = 0
+        queue.push([r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1])
+        // if (r > 0) queue.push([r - 1, c])
+        // if (r < game.settings.gridSize.rows - 1) queue.push([r + 1, c])
+        // if (c > 0) queue.push([r, c - 1])
+        // if (c < game.settings.gridSize.cols - 1) queue.push([r, c + 1])
+      }
+    }
+
+    console.log("vkjfnbvbkdfb")
+
+    const countAlive = game.players.filter((p) => !p.lost).length
+    const playerIndex = game.countTurns % countAlive
+    let i = 0
+    for (const player of game.players) {
+      if (player.lost) continue
+      if (i == playerIndex) {
+        game.turn = player
+        io.to(game.roomId).emit("change-turn", {
+          player: game.players[playerIndex % game.players.length],
+        })
+        break
+      }
+      i++
+    }
   })
 })

@@ -1,3 +1,4 @@
+import { Board } from "@/components/Board"
 import { NameInput } from "@/components/NameInput"
 import { Players } from "@/components/Players"
 import { Settings } from "@/components/settings"
@@ -6,7 +7,7 @@ import { socket } from "@/socket"
 import { useEffect } from "react"
 
 export function Game() {
-  const { name, room, roomError } = useGameContext()
+  const { name, room, roomError, state } = useGameContext()
 
   useEffect(() => {
     if (!name) return
@@ -45,7 +46,8 @@ export function Game() {
   return (
     <div className="flex w-full justify-evenly">
       <Players />
-      <div className="flex w-[70%] items-center justify-center p-4">
+      <div className="flex w-[70%] flex-col items-center justify-center p-4">
+        {state === "game-over" && <div>Game Over</div>}
         <CenterBoard />
       </div>
     </div>
@@ -53,15 +55,13 @@ export function Game() {
 }
 
 function CenterBoard() {
-  const { state } = useGameContext()
+  const { state, players } = useGameContext()
+  const me = players.find((p) => p.socketId === socket.id)
 
   if (state === "lobby") {
-    return <Settings />
+    if (me?.isLeader) return <Settings />
+    return <div>Waiting for leader to start the game...</div>
   }
 
-  return <Board />
-}
-
-function Board() {
-  return <div>Board</div>
+  if (state === "playing") return <Board />
 }

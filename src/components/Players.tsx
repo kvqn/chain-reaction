@@ -5,7 +5,7 @@ import { socket } from "@/socket"
 import { cn } from "@/lib/utils"
 
 export function Players() {
-  const { players } = useGameContext()
+  const { players, turn } = useGameContext()
 
   return (
     <div className="flex w-[300px] flex-col gap-2 rounded-lg border-4 border-neutral-600 p-4">
@@ -17,6 +17,7 @@ export function Players() {
             {
               "bg-red-900": player.color === "red",
               "bg-blue-900": player.color === "blue",
+              "border border-yellow-400": player.socketId === turn,
             },
           )}
           key={player.socketId}
