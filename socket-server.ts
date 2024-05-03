@@ -8,11 +8,16 @@ import {
   COLORS,
 } from "./src/socket-events"
 
-const io = new Server<ClientToServerEvents, ServerToClientEvents>(3000, {
-  cors: {
-    origin: "http://localhost:5173",
+const io = new Server<ClientToServerEvents, ServerToClientEvents>(
+  parseInt(process.env.SOCKET_PORT!),
+  {
+    cors: {
+      origin: process.env.REACT_SERVER!,
+    },
   },
-})
+)
+
+console.log("Socket server started on port", process.env.SOCKET_PORT)
 
 const players: Player[] = []
 const games: Game[] = []
